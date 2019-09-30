@@ -15,20 +15,28 @@ apt-get install sqlite3 -y
 mkdir -p /opt/acct_request_app/deleted_account_data
 mkdir -p /home/shared/local/bin
 mkdir -p /home/shared/data
+mkdir -p /home/shared/everyone
 
 addgroup instructors
 addgroup students
 
+chown -R root:instructors /home/shared
+chown -R root:students /home/shared/everyone
+chmod -R 755 /home/shared
+chmod -R 770 /home/shared/everyone
+
 cp acct_manage_users /usr/local/sbin
 cp acct_request_app.service /etc/systemd/system
 
-cp add_request.py /opt/acct_request_app
-cp app.js /opt/acct_request_app
-cp package.json /opt/acct_request_app
-cp -r public /opt/acct_request_app
-cp user_requests.db /opt/acct_request_app
-cp config.json /opt/acct_request_app
-cp auto_sourced_by_bashrcs /opt/acct_request_app
+# files for /opt/acct_request_app
+cp -r add_request.py \
+  app.js \
+  package.json \
+  public \
+  user_requests.db \
+  config.json \
+  auto_sourced_by_bashrcs \
+     /opt/acct_request_app/
 
 npm install --prefix /opt/acct_request_app/
 
