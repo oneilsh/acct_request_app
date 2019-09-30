@@ -45,3 +45,4 @@ chown -R www-data:www-data /opt/acct_request_app
 
 systemctl enable acct_request_app
 systemctl start acct_request_app
+systemctl status acct_request_app

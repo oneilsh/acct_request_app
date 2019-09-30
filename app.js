@@ -53,6 +53,7 @@ io.on('connection', function(socket){
           // add a property to the socket itself maybe, to indicate recaptcha validated? since the socket object is connection-specific.
           //  see https://stackoverflow.com/questions/37651817/adding-a-variable-to-sockets-in-socket-io
           socket.recaptcha_ok = true;
+          // console.log("socket.recaptcha_ok: ", socket.recaptcha_ok);
           socket.emit('recaptcha_result', {result: "good"})
 	})
 	.catch(function(errorCodes){

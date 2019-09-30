@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=nginx
+User=www-data
 ExecStart=/usr/bin/nodejs /opt/acct_request_app/app.js
 WorkingDirectory=/opt/acct_request_app
 Restart=on-failure
