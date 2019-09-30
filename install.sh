@@ -13,7 +13,8 @@ apt-get install nodejs -y
 apt-get install sqlite3 -y
 
 mkdir -p /opt/acct_request_app/deleted_account_data
-mkdir -p /home/shared
+mkdir -p /home/shared/local/bin
+mkdir -p /home/shared/data
 
 addgroup instructors
 addgroup students
@@ -26,6 +27,8 @@ cp app.js /opt/acct_request_app
 cp package.json /opt/acct_request_app
 cp -r public /opt/acct_request_app
 cp user_requests.db /opt/acct_request_app
+cp config.json /opt/acct_request_app
+cp auto_sourced_by_bashrcs /opt/acct_request_app
 
 npm install --prefix /opt/acct_request_app/
 

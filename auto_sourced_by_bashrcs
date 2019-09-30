@@ -2,7 +2,7 @@
 # is sourced by every accounts' .bashrc file. Edit it at your own risk.
 
 # add class local/bin to $PATH
-export PATH=/ACTF/local/bin:$PATH
+export PATH=/home/shared/local/bin:$PATH
 
 # sets default permissions so that files are rw-rw----
 # the effect being that student files are editable by instructors (and their 

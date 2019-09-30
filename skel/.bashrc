@@ -118,7 +118,7 @@ fi
 
 # ACTF-class config
 
-if [ -f /ACTF/local/auto_sourced_by_bashrcs ]; then
-    . /ACTF/local/auto_sourced_by_bashrcs
+if [ -f /opt/acct_request_app/auto_sourced_by_bashrcs ]; then
+    . /opt/acct_request_app/auto_sourced_by_bashrcs
 fi
 
