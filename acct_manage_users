@@ -155,6 +155,7 @@ def create_user(first, last, email, username, cryptedpass = None):
     if user_exists(username):
         sys.stderr.write("Warning: attempting to create account for username " + username + ", but that user already exists. Skipping.\n")
     else:
+        print("\n\n")
         # I had thought I'd need quotes around the gecos option, but apparently adduser is smart enough to handle it (even if there's a single quote in the name!)
         cmd = ["/usr/sbin/adduser", "--home", "/home/{0}".format(username), "--ingroup", "students",  "--gecos", "{0},,,{1}".format(first + " " + last, email), "--disabled-password", username]
         print(" ".join(cmd))
@@ -165,6 +166,14 @@ def create_user(first, last, email, username, cryptedpass = None):
         #subprocess.call(cmd)
 
         cmd = ["/bin/chgrp", "-R", "instructors", "/home/{0}".format(username)]
+        print(" ".join(cmd))
+        subprocess.call(cmd)
+
+        cmd = ["cp", "/opt/acct_request_app/skel/.bashrc", "/home/{0}/.bashrc ".format(username)]
+        print(" ".join(cmd))
+        subprocess.call(cmd)
+
+        cmd = ["chown", "{0}:instructors".format(username), "/home/{0}/.bashrc ".format(username)]
         print(" ".join(cmd))
         subprocess.call(cmd)
 

@@ -5,12 +5,12 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # needed packages
-sudo apt install libssl1.0-dev -y
-sudo apt install nodejs-dev -y
-sudo apt install node-gyp -y
-apt-get install npm -y
-apt-get install nodejs -y
-apt-get install sqlite3 -y
+#apt install libssl1.0-dev -y
+#apt install nodejs-dev -y
+#apt install node-gyp -y
+#apt install npm -y
+#apt install nodejs -y
+#apt install sqlite3 -y
 
 mkdir -p /opt/acct_request_app/deleted_account_data
 mkdir -p /home/shared/local/bin
@@ -30,10 +30,18 @@ cp acct_manage_users /usr/local/sbin
 cp acct_request_app.service /etc/systemd/system
 
 # files for /opt/acct_request_app
+
+if [ -f "/opt/acct_request_app/user_requests.db" ]; then 
+  cp /opt/acct_request_app/user_requests.db /opt/acct_request_app/user_requests.db.backup_`date -Iseconds`
+else 
+  echo "uh..."
+fi
+
 cp -r add_request.py \
   app.js \
   package.json \
   public \
+  skel \
   user_requests.db \
   config.json \
   auto_sourced_by_bashrcs \
