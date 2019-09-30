@@ -1,0 +1,190 @@
+#!/usr/bin/env python2
+import sys
+import io
+import argparse
+import sqlite3
+import subprocess
+import pwd
+import re
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Manages user requests, adds and removes access')
+    subparsers = parser.add_subparsers(help='Task to perform')
+    parser_enable = subparsers.add_parser('enable', help="Enable users (unless the account doesn't exist)")
+    parser_enable.add_argument('-u', '--users', required = True, dest = "users", nargs = "+", help = "List of user names to enable")
+    parser_enable.set_defaults(command="enable")
+
+    parser_enable = subparsers.add_parser('disable', help="Disable users (unless the account doesn't exist)")
+    parser_enable.add_argument('-u', '--users', required = True, dest = "users", nargs = "+", help = "List of user names to disable")
+    parser_enable.set_defaults(command="disable")
+
+    parser_enable = subparsers.add_parser('delete', help="Delete users (unless the account doesn't exist)")
+    parser_enable.add_argument('-u', '--users', required = True, dest = "users", nargs = "+", help = "List of user names to delete")
+    parser_enable.set_defaults(command="delete")
+
+    parser_process_requests = subparsers.add_parser('process_requests', help="Process account requests (from database); creates accounts and sets them to 'enabled'; does nothing with accounts that already exist.")
+    parser_process_requests.add_argument('-u', '--users', required = True, dest = "users", nargs = "+", help = "List of user names to process; only those that are present in the db will be processed.")
+    parser_process_requests.set_defaults(command="process_requests")
+
+    parser_list_requests = subparsers.add_parser('list_requests', help="Lists account requests. ")
+    parser_list_requests.add_argument('--include_processed', required = False, action='store_true', help = "Include already processed requests in the output.")
+    parser_list_requests.set_defaults(command="list_requests")
+
+    parser.add_argument('--database', default = "/opt/acct_request_app/user_requests.db", dest = 'database', help = "sqlite3 database file to use. Must have the correct schema.")
+
+    # todo: add to group? (and maybe get rid of addinstructor, and potentially remove addstudent too, instead using this interface)
+
+
+    return parser.parse_args()
+
+
+args = parse_args()
+
+
+if args.command == "list_requests":
+    db = sqlite3.connect(args.database)
+    cursor = db.cursor()
+    cmd = '''SELECT * from requests where processed = 'no';'''
+    if args.include_processed:
+        cmd = '''SELECT * from requests;'''
+
+    cursor.execute(cmd)
+    all_rows = cursor.fetchall()
+    for row in all_rows:
+        print("\t".join(row))
+
+    db.close()
+
+
+def delete_user(username):
+    pass
+    # first fix issues listed on github
+    # 1) check if it exists
+    # 2) pkill -u username
+    # 3) deluser --remove-all-files --backup --backup-to /opt/acct_request_app/deleted_account_data username
+    #      (this part is somewhat slow, not sure if it will work well via the web, or when doing batches?? then again maybe)
+    # 4) remove the request from the request list if present (or maybe set a flag on it?)
+
+
+def user_exists(username):
+    found = False
+    try:
+        pwd.getpwnam(username)
+        found = True
+    except KeyError:
+        pass
+
+    return found
+
+
+# deletes a user account altogether (if it exists)
+# warning: this scans the filesystem on delete to collect all their data; it could be slow, and it won't clear data from databases etc.
+# it also clears out the request that they had in the database; this happens even if there was no valid account on the system (request not processed)
+def delete_user(username):
+    if user_exists(username):
+        # kill their processes
+        cmd = ["/usr/bin/pkill", "-u", username]
+        print(" ".join(cmd))
+        subprocess.call(cmd)
+
+        # remove their account and files
+        cmd = ["/usr/sbin/deluser", "--remove-all-files", "--backup-to", "/opt/acct_request_app/deleted_account_data/", username]
+        print(" ".join(cmd))
+        subprocess.call(cmd)
+
+    else:
+        sys.stderr.write("Warning: attempting to delete account for username " + username + ", but that user doesn't exist. Will remove any request for that user next.\n")
+
+    # remove their request (forget they ever existed!)
+    db = sqlite3.connect(args.database)
+    cursor = db.cursor()
+    cursor.execute('''DELETE from requests where username = '{0}';'''.format(username)) # leave as no until ready to go live
+    db.commit()
+
+
+
+# creates a user in the 'student' and 'jupyter' groups, fails with a warning to stderr if something isn't right
+# rules: username must be [a-zA-Z0-9_-]+ and start with a [a-zA-Z]
+#        first and last can only contain letters (including internatonal), numbers, underscore, dash, single quote
+#        email must match r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)" (ref emailregex.com)
+#        if my research is correct, crypted passwords produced by openssl passwd -1 will contain only $ (which is actually used to store metadata), 
+#          letters, numbers, periods, and forward slashes.
+def create_user(first, last, email, username, cryptedpass = None):
+    if not re.match(r"^[a-zA-Z0-9_-]+$", username) or not re.match(r"^[a-zA-Z]$", username[0]):
+        sys.stderr.write("Usernames can only be letters, numbers, underscores, and dashes, and must start with a letter. Skipping. " + username + "\n")
+        return None
+
+    # handy for working with international characters: https://www.daveoncode.com/2015/02/05/regex-regular-expressions-in-python-how-to-match-english-and-non-english-letters/
+    name_regex = re.compile(r"^([^\W]|[0-9\' -])+$", re.IGNORECASE | re.UNICODE)
+    if not name_regex.match(first) or not name_regex.match(last):
+        sys.stderr.write("First and last names can only contain letters, numbers, spaces, dashes, and single quotes; Skipping. " + first + " " + last + "\n")
+        return None
+
+    if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email):
+        sys.stderr.write("Email address not valid-looking. Skipping. " + email + "\n")
+        return None
+
+    if cryptedpass != None:
+        if not re.match(r"^[a-zA-Z0-9./$]+$", cryptedpass):
+            sys.stderr.write("Invalid/malformed crypted password. Skipping. " + email + "\n")
+            return None
+
+
+    if user_exists(username):
+        sys.stderr.write("Warning: attempting to create account for username " + username + ", but that user already exists. Skipping.\n")
+    else:
+        # I had thought I'd need quotes around the gecos option, but apparently adduser is smart enough to handle it (even if there's a single quote in the name!)
+        cmd = ["/usr/sbin/adduser", "--home", "/home/{0}".format(username), "--ingroup", "students",  "--gecos", "{0},,,{1}".format(first + " " + last, email), "--disabled-password", username]
+        print(" ".join(cmd))
+        subprocess.call(cmd)
+
+        cmd = ["/usr/sbin/adduser", username, "jupyter"]
+        print(" ".join(cmd))
+        subprocess.call(cmd)
+
+        cmd = ["/bin/chgrp", "-R", "instructors", "/home/{0}".format(username)]
+        print(" ".join(cmd))
+        subprocess.call(cmd)
+
+        cmd = ["/bin/chmod", "-R", "770", "/home/{0}".format(username)]
+        print(" ".join(cmd))
+        subprocess.call(cmd)
+
+        cmd = ["/bin/ln", "-s", "/home/shared", "/home/{0}/shared".format(username)]
+        print(" ".join(cmd))
+        subprocess.call(cmd)
+
+        cmd = ["/bin/chown", "-h", "{0}:instructors".format(username), "/home/{0}/shared".format(username)]
+        print(" ".join(cmd))
+        subprocess.call(cmd)
+
+        if cryptedpass != None:
+            cmd = ["/usr/sbin/usermod", "-p", cryptedpass, username]
+            print(" ".join(cmd))
+            subprocess.call(cmd)
+
+
+
+if args.command == "delete":
+    for username in args.users:
+        delete_user(username)
+
+
+if args.command == "process_requests":
+    db = sqlite3.connect(args.database)
+    cursor = db.cursor()
+    for username in args.users:
+        cursor.execute('''SELECT * from requests where username = '{0}' and processed = 'no';'''.format(username))
+        row = cursor.fetchone()
+        if row != None:
+            first_name, last_name, email, username, cryptedpass, processed, other = row
+
+            create_user(first_name, last_name, email, username, cryptedpass)
+
+            cursor.execute('''UPDATE requests SET processed = ? where username = ?;''', ("yes", username)) # leave as no until ready to go live
+            db.commit()
+        else:
+            sys.stderr.write("Warning: attempted processing request for user " + username + ", but no unprocessed request entry found in requests database.\n")
+
+    db.close()

@@ -1,0 +1,9 @@
+#success_message{ display: none;}
+
+.errorbox  {
+ background: #FF000055;
+}
+
+.successbox  {
+ background: #00FF0055;
+}

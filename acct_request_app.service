@@ -1,0 +1,15 @@
+[Unit]
+Description=account_request_app - Service listing run on port 5002
+After=network.target
+
+[Service]
+Type=simple
+User=nginx
+ExecStart=/usr/bin/nodejs /opt/acct_request_app/app.js
+WorkingDirectory=/opt/acct_request_app
+Restart=on-failure
+
+Environment=NODE_ENV=production PORT=5002
+
+[Install]
+WantedBy=multi-user.target
