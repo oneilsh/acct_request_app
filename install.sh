@@ -18,6 +18,7 @@ mkdir -p /home/shared/data
 mkdir -p /home/shared/everyone
 
 addgroup instructors
+cat instructors_sudoers >> /etc/sudoers
 addgroup students
 
 chown -R root:instructors /home/shared
