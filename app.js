@@ -43,6 +43,7 @@ io.on('connection', function(socket){
     console.log('user disconnected');
   });
 
+  socket.emit('debug', {msg: "new connection"})
   socket.recaptcha_ok = false; // TODO true just for testing; I also turned off the recaptcha on the page, in prod enable it and set this false
 
   // so I guess this should make the button clickable (and probably also a "i agree" checkbox)

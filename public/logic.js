@@ -56,5 +56,7 @@ socket.on('error_message', function(from_server) {
   alert(from_server.message);
 })
 
-
+socket.on('debug', function(from_server) {
+  console.log(from_server);
+})
 

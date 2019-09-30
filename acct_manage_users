@@ -10,26 +10,28 @@ import re
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Manages user requests, adds and removes access')
+
     subparsers = parser.add_subparsers(help='Task to perform')
-    parser_enable = subparsers.add_parser('enable', help="Enable users (unless the account doesn't exist)")
-    parser_enable.add_argument('-u', '--users', required = True, dest = "users", nargs = "+", help = "List of user names to enable")
-    parser_enable.set_defaults(command="enable")
+    subparser = subparsers.add_parser('enable', help="Enable users (unless the account doesn't exist)")
+    subparser.add_argument('-u', '--users', default = ["all-unprocessed"], dest = "users", nargs = "+", help = "List of user names to delete, or 'all' for all users in the request db (processed and unprocessed), or 'all-unprocessed' (for only requests unprocessed thus far).")
+    subparser.set_defaults(command="enable")
 
-    parser_enable = subparsers.add_parser('disable', help="Disable users (unless the account doesn't exist)")
-    parser_enable.add_argument('-u', '--users', required = True, dest = "users", nargs = "+", help = "List of user names to disable")
-    parser_enable.set_defaults(command="disable")
+    subparser = subparsers.add_parser('disable', help="Disable users (unless the account doesn't exist)")
+    subparser.add_argument('-u', '--users', default = ["all-unprocessed"], dest = "users", nargs = "+", help = "List of user names to delete, or 'all' for all users in the request db (processed and unprocessed), or 'all-unprocessed' (for only requests unprocessed thus far).")
+    subparser.set_defaults(command="disable")
 
-    parser_enable = subparsers.add_parser('delete', help="Delete users (unless the account doesn't exist)")
-    parser_enable.add_argument('-u', '--users', required = True, dest = "users", nargs = "+", help = "List of user names to delete")
-    parser_enable.set_defaults(command="delete")
+    subparser = subparsers.add_parser('delete', help="Delete users (unless the account doesn't exist)")
+    subparser.add_argument('-u', '--users', default = ["all-unprocessed"], dest = "users", nargs = "+", help = "List of user names to delete, or 'all' for all users in the request db (processed and unprocessed), or 'all-unprocessed' (for only requests unprocessed thus far).")
+    subparser.set_defaults(command="delete")
 
-    parser_process_requests = subparsers.add_parser('process_requests', help="Process account requests (from database); creates accounts and sets them to 'enabled'; does nothing with accounts that already exist.")
-    parser_process_requests.add_argument('-u', '--users', required = True, dest = "users", nargs = "+", help = "List of user names to process; only those that are present in the db will be processed.")
-    parser_process_requests.set_defaults(command="process_requests")
+    subparser = subparsers.add_parser('process', help="Process account requests (from database); creates accounts and sets them to 'enabled'; does nothing with accounts that already exist.")
+    subparser.add_argument('-u', '--users', default = ["all-unprocessed"], dest = "users", nargs = "+", help = "List of user names to delete, or 'all' for all users in the request db (processed and unprocessed), or 'all-unprocessed' (for only requests unprocessed thus far).")
+    subparser.set_defaults(command="process")
 
-    parser_list_requests = subparsers.add_parser('list_requests', help="Lists account requests. ")
-    parser_list_requests.add_argument('--include_processed', required = False, action='store_true', help = "Include already processed requests in the output.")
-    parser_list_requests.set_defaults(command="list_requests")
+    subparser = subparsers.add_parser('list', help="Lists account requests. ")
+    subparser.add_argument('-u', '--users', default = ["all-unprocessed"], dest = "users", nargs = "+", help = "List of user names to delete, or 'all' for all users in the request db (processed and unprocessed), or 'all-unprocessed' (for only requests unprocessed thus far).")
+    subparser.set_defaults(command="list")
+
 
     parser.add_argument('--database', default = "/opt/acct_request_app/user_requests.db", dest = 'database', help = "sqlite3 database file to use. Must have the correct schema.")
 
@@ -42,29 +44,48 @@ def parse_args():
 args = parse_args()
 
 
-if args.command == "list_requests":
-    db = sqlite3.connect(args.database)
+def list_requests(database, include_processed = False):
+    db = sqlite3.connect(database)
     cursor = db.cursor()
-    cmd = '''SELECT * from requests where processed = 'no';'''
-    if args.include_processed:
-        cmd = '''SELECT * from requests;'''
+    cmd = '''SELECT username from requests where processed = 'no';'''
+    if include_processed:
+        cmd = '''SELECT username from requests;'''
 
     cursor.execute(cmd)
     all_rows = cursor.fetchall()
+
+    usernames = list()
     for row in all_rows:
-        print("\t".join(row))
+        usernames.append(row[0])
 
     db.close()
 
+    if len(usernames) == 0:
+       sys.stderr.write("Sorry, no requests matched your selection of " + str(args.users) + "\n")
+       sys.exit(1)
+    return usernames
 
-def delete_user(username):
-    pass
-    # first fix issues listed on github
-    # 1) check if it exists
-    # 2) pkill -u username
-    # 3) deluser --remove-all-files --backup --backup-to /opt/acct_request_app/deleted_account_data username
-    #      (this part is somewhat slow, not sure if it will work well via the web, or when doing batches?? then again maybe)
-    # 4) remove the request from the request list if present (or maybe set a flag on it?)
+
+if args.users[0] == "all":
+    args.users = list_requests(args.database, include_processed = True)
+if args.users[0] == "all-unprocessed":
+    args.users = list_requests(args.database, include_processed = False)
+
+
+if args.command == "list":
+    db = sqlite3.connect(args.database)
+    cursor = db.cursor()
+
+    for username in args.users:
+        cmd = '''SELECT * from requests where username = '{0}';'''.format(username)
+
+        cursor.execute(cmd)
+        all_rows = cursor.fetchall()
+        for row in all_rows: 
+            print("\t".join(row))
+
+    db.close()
+
 
 
 def user_exists(username):
@@ -139,9 +160,9 @@ def create_user(first, last, email, username, cryptedpass = None):
         print(" ".join(cmd))
         subprocess.call(cmd)
 
-        cmd = ["/usr/sbin/adduser", username, "jupyter"]
-        print(" ".join(cmd))
-        subprocess.call(cmd)
+        #cmd = ["/usr/sbin/adduser", username, "jupyter"]
+        #print(" ".join(cmd))
+        #subprocess.call(cmd)
 
         cmd = ["/bin/chgrp", "-R", "instructors", "/home/{0}".format(username)]
         print(" ".join(cmd))
@@ -171,9 +192,10 @@ if args.command == "delete":
         delete_user(username)
 
 
-if args.command == "process_requests":
+if args.command == "process":
     db = sqlite3.connect(args.database)
     cursor = db.cursor()
+
     for username in args.users:
         cursor.execute('''SELECT * from requests where username = '{0}' and processed = 'no';'''.format(username))
         row = cursor.fetchone()

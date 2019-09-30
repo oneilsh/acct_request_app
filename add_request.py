@@ -32,6 +32,9 @@ def user_exists(username):
     except KeyError:
         pass
 
+    if username == "root" or username == "shared" or username == "all":
+        found = True
+
     return found
 
 
