@@ -1,3 +1,5 @@
 {
-  "className" : "{{ className }}"
+  "sendgrid_key": "",
+  "recaptcha_siteKey": "",
+  "recaptcha_secretKey": ""
 }
