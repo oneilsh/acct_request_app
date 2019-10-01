@@ -169,11 +169,11 @@ def create_user(first, last, email, username, cryptedpass = None):
         print(" ".join(cmd))
         subprocess.call(cmd)
 
-        cmd = ["cp", "/opt/acct_request_app/skel/.bashrc", "/home/{0}/.bashrc ".format(username)]
+        cmd = ["cp", "/opt/acct_request_app/skel/.bashrc", "/home/{0}/.bashrc".format(username)]
         print(" ".join(cmd))
         subprocess.call(cmd)
 
-        cmd = ["chown", "{0}:instructors".format(username), "/home/{0}/.bashrc ".format(username)]
+        cmd = ["chown", "{0}:instructors".format(username), "/home/{0}/.bashrc".format(username)]
         print(" ".join(cmd))
         subprocess.call(cmd)
 
