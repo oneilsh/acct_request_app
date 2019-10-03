@@ -7,10 +7,7 @@ var fs = require('fs');
 
 reCAPTCHA=require('recaptcha2')
 
-var contents = fs.readFile('/opt/acct_request_app/config.json', 'utf8', function(err, contents) {
-  config = JSON.parse(contents);
-});
-
+var config = JSON.parse(fs.readFileSync('/opt/acct_request_app/config.json'))
 
 recaptcha=new reCAPTCHA({
   siteKey: config.recaptcha_siteKey,
@@ -38,15 +35,19 @@ function getUnauthorizedResponse(req) {
 // serve file requests from the public folder (html, javascript, etc)
 app.use(express.static('public'))
 
-
 io.on('connection', function(socket){
+	console.log(socket);
   console.log('user connected');
   socket.on('disconnect', function(){
     console.log('user disconnected');
   });
-
-  socket.emit('debug', {msg: "new connection"})
-  socket.recaptcha_ok = false; // TODO true just for testing; I also turned off the recaptcha on the page, in prod enable it and set this false
+   
+	
+  var clientIpAddress = socket.request.headers['x-real-ip'] || socket.request.connection.remoteAddress;
+  socket.emit('debug', {msg: "new connection from ", "ip": clientIpAddress})
+  // TODO: this is a crappy way to do this, attaching the info to the socket itself. really crappy, and likely insecure.
+  // should use a solution like this: https://appdividend.com/2017/08/12/google-recaptcha-node-js-tutorial-scratch/
+  socket.recaptcha_ok = true; // TODO true just for testing; I also turned off the recaptcha on the page, in prod enable it and set this false
 
   // so I guess this should make the button clickable (and probably also a "i agree" checkbox)
   socket.on('check_recaptcha', function(input) {

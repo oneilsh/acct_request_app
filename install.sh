@@ -11,8 +11,8 @@ fi
 #apt install npm -y
 #apt install nodejs -y
 #apt install sqlite3 -y
-apt install python-pip -y
-pip install sendgrid
+#apt install python-pip -y
+#pip install sendgrid
 
 mkdir -p /opt/acct_request_app/deleted_account_data
 mkdir -p /home/shared/local/bin
@@ -54,5 +54,5 @@ npm install --prefix /opt/acct_request_app/
 chown -R www-data:www-data /opt/acct_request_app
 
 systemctl enable acct_request_app
-systemctl start acct_request_app
+systemctl restart acct_request_app
 systemctl status acct_request_app

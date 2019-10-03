@@ -97,6 +97,7 @@
 
         })
         .on('status.field.bv', function(e, data) {
+	  console.log("hellooooooo"); // why does this not work...
             /*$('#success_message').slideDown({ opacity: "show" }, "slow") // Do something ...
                 $('#contact_form').data('bootstrapValidator').resetForm();
 
@@ -113,5 +114,21 @@
             $.post($form.attr('action'), $form.serialize(), function(result) {
                 console.log(result);
             }, 'json');*/
-        });
+         });
+
+    /*.on( 'status.field.bv', function( e, data ) {
+	console.log("is this thing on?");
+    let $this = $( this );
+    let formIsValid = true;
+
+    $( '.form-group', $this ).each( function() {
+        if($( this ).hasClass('required')) {
+          formIsValid = formIsValid && $( this ).hasClass( 'has-success' );
+	  console.log(formIsValid);
+	}
+    });
+
+    $( '#submit_button', $this ).attr( 'disabled', !formIsValid );
+});*/
+	
 });

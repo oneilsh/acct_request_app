@@ -69,7 +69,7 @@ if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email):
 
 # check existing users
 if user_exists(username):
-    sys.stderr.write("Error: username already taken. Choose another.\n")
+    sys.stderr.write("Error: username invalid or already taken. Choose another.\n")
     sys.exit(1)
 
 
@@ -83,11 +83,11 @@ rowemail = cursor.fetchone()
 db.close()
 
 if rowusername != None:
-    sys.stderr.write("Error: username already taken. Choose another.\n")
+    sys.stderr.write("Error: username invalid or already taken. Choose another.\n")
     sys.exit(1)
 
 if rowemail != None:
-    sys.stderr.write("Error: email already taken. Choose another.\n")
+    sys.stderr.write("Error: email invalid or already taken. Choose another.\n")
     sys.exit(1)
 
 cryptedpass = subprocess.check_output(['/usr/bin/openssl', 'passwd', '-1', password])
