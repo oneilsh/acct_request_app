@@ -11,6 +11,8 @@ fi
 #apt install npm -y
 #apt install nodejs -y
 #apt install sqlite3 -y
+apt install python-pip -y
+pip install sendgrid
 
 mkdir -p /opt/acct_request_app/deleted_account_data
 mkdir -p /home/shared/local/bin

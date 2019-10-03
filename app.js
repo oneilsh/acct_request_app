@@ -7,14 +7,16 @@ var fs = require('fs');
 
 reCAPTCHA=require('recaptcha2')
 
-recaptcha=new reCAPTCHA({
-  siteKey:'6LeoXHEUAAAAAGSvYG-mXrUhzpLDdG4Ah_jbOIn1',
-  secretKey:'6LeoXHEUAAAAABAHwfhvlbXDynLvD_hx6LCORXvr'
-})
-
 var contents = fs.readFile('/opt/acct_request_app/config.json', 'utf8', function(err, contents) {
   config = JSON.parse(contents);
 });
+
+
+recaptcha=new reCAPTCHA({
+  siteKey: config.recaptcha_siteKey,
+  secretKey: config.recaptcha_secretKey
+})
+
 
 
 // Ensure this is before any other middleware or routes
